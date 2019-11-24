@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
@@ -9,16 +10,20 @@ namespace NTR2.Models
 {
     public class Category
     {
+        [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int CateogryID {get;set;}
+        public int CategoryID {get;set;}
         [Required(ErrorMessage = "Title is required")]
-        [MaxLength(64)]
         [StringLength(64)]
-        [Index(IsUnique=true)]
         public string Title { get; set; }
+        public ICollection<NoteCategory> NoteCategories { get; set; }
         public Category()
         {
             Title="write some title";
+        }
+        public Category(string category)
+        {
+            Title=category;
         }
     }
 }
