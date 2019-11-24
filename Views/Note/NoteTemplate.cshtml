@@ -1,0 +1,45 @@
+@model NoteEditViewModel
+<div class="col-md-4">
+        <form asp-controller="Note" asp-action="Edit" method="post">
+            <input type="hidden" asp-for="@Model.OldTitle" value="@Model.Note.Title" />
+            <label asp-for="Note.Title" class="control-label"></label>
+            <input asp-for="Note.Title" class="form-control" />
+            <label asp-for="Note.Description" class="control-label"></label>
+            <textarea asp-for="Note.Description"
+                data-val-required="The Description field is required."
+                data-val-maxlength-max="5000"
+                data-val-maxlength="The field Description must be a string or array type with a maximum length of '5000'."
+                data-val="true" rows="4" cols="50" style="overflow:auto;resize:none" asp-for="PromptDescription"></textarea> <br />
+            <input type="submit" value="Save" class="btn btn-primary" />
+        </form>
+        <form asp-controller="Note" asp-action="AddCategory" asp-action="AddCategory">
+            @Html.HiddenFor(m=>m.Note)
+            <label asp-for="NewCategory" class="control-label"></label>
+            <input asp-for="NewCategory" class="form-control" />
+            <input type="submit" value="Add" class="btn btn-primary" />
+        </form>
+<form method="post" asp-action="RemoveCategories">
+    <input type="hidden" name="Id" value="@Model.Note.Title" />
+    <h2>In NoteCategories:</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <td>Name</td>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in Model.Note.NoteCategories)
+            {
+                <tr>
+                    <td>@c</td>
+                    <td>
+                        <input type="checkbox" name="CategoriesToRemove" value="@c">
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <input type="submit" value="Remove categories" class="btn btn-primary" />
+</form>
+
+<div>

@@ -1,0 +1,73 @@
+@model NoteEditViewModel
+<div class="col-md-4">
+        <form asp-controller="Note" asp-action="Edit" method="post">
+            @Html.ValidationSummary(true)
+            <label asp-for="Note.Title" class="control-label"></label>
+            <input asp-for="Note.Title" class="form-control" />
+            @Html.ValidationMessage("Title error")
+            <label asp-for="Note.Description" class="control-label"></label>
+            <textarea asp-for="Note.Description"
+                data-val-required="The Description field is required."
+                data-val-maxlength-max="5000"
+                data-val-maxlength="The field Description must be a string or array type with a maximum length of '5000'."
+                data-val="true" rows="4" cols="50" style="overflow:auto;resize:none" asp-for="PromptDescription"></textarea> <br />
+            @Html.HiddenFor(m=>m.Note.NoteDate)
+            @Html.HiddenFor(m=>m.OldTitle)
+            @Html.HiddenFor(m=>m.Note.Extension)
+            @for (int i = 0; i < Model.Note.NoteCategories.Count(); ++i)
+            {
+                @Html.HiddenFor(item => Model.Note.NoteCategories[i], new { @class = "form-control", @readonly = "readonly",@autocomplete = "off" })
+            }
+            <input type="submit" value="Save" class="btn btn-primary" />
+        </form>
+        <form asp-controller="Note" asp-action="AddCategory" asp-action="AddCategory">
+            @Html.ValidationSummary(true)
+            @Html.HiddenFor(m=>m.Note.Title)
+            @Html.HiddenFor(m=>m.Note.Description)
+            @Html.HiddenFor(m=>m.OldTitle)
+            @Html.HiddenFor(m=>m.Note.Extension)
+            @for (int i = 0; i < Model.Note.NoteCategories.Count(); ++i)
+            {
+                @Html.HiddenFor(item => Model.Note.NoteCategories[i], new { @class = "form-control", @readonly = "readonly", @autocomplete = "off" })
+            }
+            <label asp-for="NewCategory" class="control-label"></label>
+            <input asp-for="NewCategory" class="form-control" autocomplete = "off"/>
+            <input type="submit" value="Add" class="btn btn-primary" />
+            @Html.ValidationMessage("Category error")
+        </form>
+<form method="post" asp-action="RemoveCategories">
+    @Html.ValidationSummary(true)
+    @Html.HiddenFor(m=>m.Note.Title)
+    @Html.HiddenFor(m=>m.Note.Description)
+    @Html.HiddenFor(m=>m.Note.NoteDate)
+    @Html.HiddenFor(m=>m.Note.Extension)
+    @Html.HiddenFor(m=>m.OldTitle)
+    <h2>In NoteCategories:</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <td>Name</td>
+            </tr>
+        </thead>
+        <tbody>
+            @for (int i = 0; i < Model.Note.NoteCategories.Count(); ++i)
+            {
+                <tr>
+                    <td>
+                                @Html.TextBoxFor(item => Model.Note.NoteCategories[i], new { @class = "form-control", @readonly = "readonly", @autocomplete = "off" })
+                    </td>
+                    <td>
+                        <input type="checkbox" name="CategoriesToRemove" value="@Model.Note.NoteCategories[i]" autocomplete = "off">
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <input type="submit" value="Remove categories" class="btn btn-primary" />
+</form>
+<a asp-action="Index" asp-controller="Note">Back to list</a>
+<div>
+
+ @section Scripts{
+     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+ }   

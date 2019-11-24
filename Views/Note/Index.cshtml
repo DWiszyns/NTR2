@@ -1,0 +1,73 @@
+@model NTR2.Models.NoteIndexViewModel
+
+@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h1>List of your notes</h1>
+ <form method="get">
+    <div class="form-group">
+        <label asp-for="DateFrom" class="control-label"></label>
+        <input asp-for="DateFrom" class="form-control" type="date"/>
+        <span asp-validation-for="DateFrom" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="DateTo" class="control-label"></label>
+        <input asp-for="DateTo" class="form-control" type="date"/>
+        <span asp-validation-for="DateTo" class="text-danger"></span>
+    </div>
+   @Html.DropDownListFor(n => n.Category, Model.NoteCategories, "")
+    <button type="submit">Filter</button>
+</form>
+<form asp-action="Clear">
+    @Html.HiddenFor(model => model.DateFrom)
+    @Html.HiddenFor(model => model.DateTo)
+    @Html.HiddenFor(model => model.Category)
+    <button type="submit">Clear</button>
+</form>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Notes[0].NoteDate)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Notes[0].Title)
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Notes) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.NoteDate)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Title)
+            </td>
+            <td>
+                <a asp-action="Edit" asp-route-Title="@item.Title">Edit</a> |
+                <a asp-action="Delete" asp-route-Title="@item.Title">Delete</a>
+            </td>
+        </tr>
+        }
+    </tbody>
+</table>
+
+@{
+    var prevDisabled = !Model.Notes.HasPreviousPage ? "disabled" : "";
+    var nextDisabled = !Model.Notes.HasNextPage ? "disabled" : "";
+}
+
+<div class="row">
+    <a class="btn col-sm btn-primary" asp-action="Add">Add</a> 
+    <a asp-action="Index" asp-controller="Home">Cancel</a>
+    <a asp-action="Index" asp-route-pageNumber="@(Model.Notes.PageIndex - 1)" asp-route-DateFrom="@Model.DateFrom" asp-route-DateTo="@Model.DateTo" 
+        asp-route-category="@Model.Category" class="btn btn-default col-sm-offset-5 col-md-offset-6 @prevDisabled">Prev Page</a>
+    <span>@Model.Notes.PageIndex / @Model.Notes.TotalPages</span>
+    <a asp-action="Index" asp-route-pageNumber="@(Model.Notes.PageIndex + 1)" asp-route-DateFrom="@Model.DateFrom" asp-route-DateTo="@Model.DateTo" 
+        asp-route-category="@Model.Category" 
+     class="btn btn-default @nextDisabled">Next Page</a>
+</div>
+
