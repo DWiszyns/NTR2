@@ -1,7 +1,5 @@
 @model NoteEditViewModel
-@{
-    var tmpArray=Model.Note.NoteCategories.ToArray();
-}
+
 <div class="col-md-4">
         <form asp-controller="Note" asp-action="Edit" method="post">
             @Html.ValidationSummary(true)
@@ -19,8 +17,8 @@
             @Html.HiddenFor(m=>m.Note.Timestamp)
             @for (int i = 0; i < Model.Note.NoteCategories.Count; ++i)
             {
-                @Html.HiddenFor(item => Model.Note.NoteCategories.ToList()[i].Category.CategoryID)
-                @Html.HiddenFor(item => Model.Note.NoteCategories.ToList()[i].Category.Title, new { @class = "form-control", @readonly = "readonly" })
+                <input type="hidden" name="Note.NoteCategories[@i].Category.CategoryID" value="@Model.Note.NoteCategories.ToList()[i].Category.CategoryID" />
+                <input type="hidden" name="Note.NoteCategories[@i].Category.Title" value="@Model.Note.NoteCategories.ToList()[i].Category.Title" />
             }
             <input type="submit" value="Save" class="btn btn-primary" />
         </form>
@@ -32,8 +30,8 @@
             @Html.HiddenFor(m=>m.Note.Timestamp)
             @for (int i = 0; i < Model.Note.NoteCategories.Count; ++i)
             { 
-                @Html.HiddenFor(item => Model.Note.NoteCategories.ToList()[i].Category.CategoryID)
-                @Html.HiddenFor(item => Model.Note.NoteCategories.ToList()[i].Category.Title, new { @class = "form-control", @readonly = "readonly" })
+                <input type="hidden" name="Note.NoteCategories[@i].Category.CategoryID" value="@Model.Note.NoteCategories.ToList()[i].Category.CategoryID" />
+                <input type="hidden" name="Note.NoteCategories[@i].Category.Title" value="@Model.Note.NoteCategories.ToList()[i].Category.Title" />
             }
             <label asp-for="NewCategory" class="control-label"></label>
             <input asp-for="NewCategory" class="form-control" autocomplete = "off"/>
@@ -59,10 +57,11 @@
             {
                 <tr>
                     <td>
-                        @Html.HiddenFor(item => Model.Note.NoteCategories.ToList()[i].Category.CategoryID)
+                        <input type="hidden" name="Note.NoteCategories[@i].Category.CategoryID" value="@Model.Note.NoteCategories.ToList()[i].Category.CategoryID" />
+                        <input type="hidden" name="Note.NoteCategories[@i].Category.Title" value="@Model.Note.NoteCategories.ToList()[i].Category.Title" />
                         @Html.TextBoxFor(item => Model.Note.NoteCategories.ToList()[i].Category.Title, new { @class = "form-control", @readonly = "readonly" })                    </td>
                     <td>
-                        <input type="checkbox" name="CategoriesToRemove" value="@tmpArray[i]" autocomplete = "off">
+                        <input type="checkbox" name="CategoriesToRemove" value="@Model.Note.NoteCategories.ToList()[i].Category.CategoryID" autocomplete = "off">
                     </td>
                 </tr>
             }

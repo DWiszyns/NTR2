@@ -9,10 +9,8 @@ namespace NTR2.Models
 {
     public class NoteCategory
     {
-        [ForeignKey("NoteID")]
         public int NoteID {get;set;}
         public Note Note { get; set; }
-        [ForeignKey("CategoryID")]
         public int CategoryID {get;set;}
         public Category Category { get; set; }
     }

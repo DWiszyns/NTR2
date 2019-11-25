@@ -24,25 +24,5 @@ namespace NTR2.Models
 
         [Timestamp]
         public byte[] Timestamp { get; set; }
-        public Note()
-        {
-            Title="write some title";
-            NoteCategories=new NoteCategory []{};
-            NoteDate=DateTime.Now;
-            Description="Write some text";
-        }
-        public Note(string title, ICollection <NoteCategory> categories, DateTime date, string text)
-        {
-            Title=title;
-            NoteCategories=categories;
-            NoteDate=date;
-            Description=text;
-        }
-         public Note(string title, ICollection <NoteCategory>categories, DateTime date)
-        {
-            Title=title;
-            NoteCategories=categories;
-            NoteDate=date;
-        }
     }
 }

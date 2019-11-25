@@ -15,6 +15,7 @@ namespace NTR2.Models
         public string NewCategory { get; set; }
         public string[] CategoriesToRemove { get; set; }
         public string OldTitle  {get;set;}
+        //public string[] Categories{get;set;}
         public List<SelectListItem> Extensions = new List<SelectListItem>
             {
                 new SelectListItem { Value = "md", Text = "md" },

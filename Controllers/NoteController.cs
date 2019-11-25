@@ -30,7 +30,7 @@ namespace NTR2.Controllers
             this.Notes=_context.Notes.ToList();
             foreach(var n in Notes)
             {
-                foreach(var c in n.NoteCategories)
+                if(n.NoteCategories!=null && n.NoteCategories.Count!=0)foreach(var c in n.NoteCategories)
                 {
                     if(!possibleCategories.Contains(c.Note.Title)) possibleCategories=possibleCategories.Append(c.Note.Title).ToArray();
 
@@ -52,7 +52,7 @@ namespace NTR2.Controllers
             return Index(DateTime.MinValue,DateTime.MinValue);
         }
         [HttpPost]
-        public IActionResult AddCategory(NoteEditViewModel model)
+        public IActionResult AddCategory(NoteEditViewModel model,List<NoteCategory> noteCategories)
         {
             if(ModelState.IsValid)
             {
@@ -63,14 +63,14 @@ namespace NTR2.Controllers
                         return View("Edit",model);
                     else return View("Add",model);
                 }
-                else if(model.Note.NoteCategories.Where(m=>m.Category.Title==model.NewCategory).Any())
+                else if(noteCategories.Where(m=>m.Category.Title==model.NewCategory).Any())
                 {
                     ModelState.AddModelError("Category error","Category already exists");
                     if(Notes.Where(m=>m.Title==model.Note.Title).Any())
                         return View("Edit",model);
                     else return View("Add",model);
                 }
-                model.Note.NoteCategories=model.Note.NoteCategories.Append(new NoteCategory
+                model.Note.NoteCategories=noteCategories.Append(new NoteCategory
                     {Note=model.Note,Category=new Category(model.NewCategory)}).ToArray();
                 model.NewCategory="";
             }
@@ -93,11 +93,15 @@ namespace NTR2.Controllers
         }
         public IActionResult Add()
         {
-            Note n = new Note{};
+            Note n = new Note();
+            n.Title="write some title";
+            n.NoteDate=DateTime.Now;
+            n.Description="Write some text";
+            n.NoteCategories = new List<NoteCategory>();
             return View(new NoteEditViewModel(n));
         }
         [HttpPost]
-        public IActionResult Add(NoteEditViewModel model)
+        public IActionResult Add(NoteEditViewModel model, List<NoteCategory> noteCategories)
         {
             if(ModelState.IsValid)
             {
@@ -111,23 +115,44 @@ namespace NTR2.Controllers
                     ModelState.AddModelError("Title error","Title already taken");
                     return View(model);
                 }
-                _context.Notes.Add(model.Note);
-                foreach(var n in model.Note.NoteCategories)
+                using(var transaction = _context.Database.BeginTransaction())
                 {
-                    if(_context.Categories.Where(m=>m.Title==n.Category.Title).Any())
+                    _context.Notes.Add(model.Note);
+                    _context.SaveChanges();
+                    transaction.Commit();
+                }
+                foreach(var n in noteCategories)
+                {
+                    Category newCategory;
+                    if(!_context.Categories.Where(m=>m.Title==n.Category.Title).Any())
                     {
-                        Category newCategory=new Category{Title=n.Category.Title};
-                        _context.Categories.Add(newCategory);
-                        _context.NoteCategories.Add(new NoteCategory{Note=model.Note,Category=newCategory});
+                        using(var transaction = _context.Database.BeginTransaction())
+                        {
+                            newCategory=new Category{Title=n.Category.Title};
+                            _context.Categories.Add(newCategory);
+                            _context.SaveChanges();
+                            transaction.Commit();
+                        }
                     }
                     else
                     {
-                        Category category=_context.Categories.Where(m=>m.Title==n.Category.Title).FirstOrDefault();
-                        _context.NoteCategories.Add(new NoteCategory{Note=model.Note,Category=category});
+                        newCategory=_context.Categories.Where(m=>m.Title==n.Category.Title).FirstOrDefault();
+                    }
+                    using(var transaction = _context.Database.BeginTransaction())
+                    {
+                        bool noteExists = _context.Notes.Where(m=>m.NoteID==model.Note.NoteID).Any();
+                        bool categoryExists = _context.Categories.Where(m=>m.CategoryID==newCategory.CategoryID).Any();
+                        NoteCategory c = new NoteCategory{NoteID=model.Note.NoteID,CategoryID=newCategory.CategoryID};
+                        _context.NoteCategories.Add(c);
+                        _context.SaveChanges();
+                        transaction.Commit();
                     }
                 }
-                _context.SaveChanges();
             }
+            var errors = ModelState
+            .Where(x => x.Value.Errors.Count > 0)
+            .Select(x => new { x.Key, x.Value.Errors })
+            .ToArray();
             return Index(DateTime.MinValue,DateTime.MinValue,"");
         }
         public IActionResult Edit(string title)
