@@ -32,7 +32,6 @@
             @Html.HiddenFor(m=>m.Note.Timestamp)
             @for (int i = 0; i < Model.Note.NoteCategories.Count; ++i)
             {
-
                 <input type="hidden" name="NoteCategories.Index" value="@i" />
                 <input type="hidden" name="NoteCategories[@i].Category.CategoryID" value="@Model.Note.NoteCategories.ToList()[i].Category.CategoryID" />
                 <input type="hidden" name="NoteCategories[@i].Category.Title" value="@Model.Note.NoteCategories.ToList()[i].Category.Title" />
@@ -63,11 +62,11 @@
             {
                 <tr>
                     <td>
-                            <input type="hidden" name="Note.NoteCategories.Index" value="@i" />
-                            <input type="hidden" name="Note.NoteCategories[@i].Category.CategoryID" value="@Model.Note.NoteCategories.ToList()[i].Category.CategoryID" />
-                            <input type="hidden" name="Note.NoteCategories[@i].Category.Title" value="@Model.Note.NoteCategories.ToList()[i].Category.Title" />
-                            <input type="hidden" name="Note.NoteCategories[@i].Note.NoteID" value="@Model.Note.NoteCategories.ToList()[i].Note.NoteID" />
-                            <input type="hidden" name="Note.NoteCategories[@i].Note.Title" value="@Model.Note.NoteCategories.ToList()[i].Note.Title" />
+                            <input type="hidden" name="NoteCategories.Index" value="@i" />
+                            <input type="hidden" name="NoteCategories[@i].Category.CategoryID" value="@Model.Note.NoteCategories.ToList()[i].Category.CategoryID" />
+                            <input type="hidden" name="NoteCategories[@i].Category.Title" value="@Model.Note.NoteCategories.ToList()[i].Category.Title" />
+                            <input type="hidden" name="NoteCategories[@i].Note.NoteID" value="@Model.Note.NoteCategories.ToList()[i].Note.NoteID" />
+                            <input type="hidden" name="NoteCategories[@i].Note.Title" value="@Model.Note.NoteCategories.ToList()[i].Note.Title" />
                             @Html.TextBoxFor(item => Model.Note.NoteCategories.ToList()[i].Category.Title, new { @class = "form-control", @readonly = "readonly" })
                     </td>
                     <td>

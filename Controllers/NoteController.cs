@@ -8,6 +8,8 @@ using NTR2.Models;
 using NTR2.Repositories;
 using NTR2;
 using NTR2.Data;
+using Microsoft.EntityFrameworkCore;
+
 
 namespace NTR2.Controllers
 {
@@ -80,7 +82,7 @@ namespace NTR2.Controllers
             else return View("Add",model);
         }
         [HttpPost]
-        public IActionResult RemoveCategories(NoteEditViewModel model)
+        public IActionResult RemoveCategories(NoteEditViewModel model,List<NoteCategory> noteCategories)
         {
             foreach(var c in model.CategoriesToRemove ?? new string[] { })
             {
@@ -140,10 +142,7 @@ namespace NTR2.Controllers
                     }
                     using(var transaction = _context.Database.BeginTransaction())
                     {
-                        bool noteExists = _context.Notes.Where(m=>m.NoteID==model.Note.NoteID).Any();
-                        bool categoryExists = _context.Categories.Where(m=>m.CategoryID==newCategory.CategoryID).Any();
-                        NoteCategory c = new NoteCategory{NoteID=model.Note.NoteID,CategoryID=newCategory.CategoryID};
-                        _context.NoteCategories.Add(c);
+                        _context.NoteCategories.Add(new NoteCategory{NoteID=model.Note.NoteID,CategoryID=newCategory.CategoryID});
                         _context.SaveChanges();
                         transaction.Commit();
                     }
@@ -158,10 +157,11 @@ namespace NTR2.Controllers
         public IActionResult Edit(string title)
         {
             Note n = Notes.Where(m => m.Title == title).FirstOrDefault();
+            n =  _context.Notes.Include(i => i.NoteCategories).ThenInclude(noteCategories => noteCategories.Category).FirstOrDefault(note => note.NoteID == n.NoteID);
             return View(new NoteEditViewModel(n));
         }
         [HttpPost]
-        public IActionResult Edit(NoteEditViewModel model)
+        public IActionResult Edit(NoteEditViewModel model,List<NoteCategory> noteCategories)
         {            
             Note oldNote = Notes.Where(m=>m.Title==model.OldTitle).FirstOrDefault();
             Note newNote = model.Note;
@@ -172,8 +172,37 @@ namespace NTR2.Controllers
                     ModelState.AddModelError("Title error","Title already taken");
                     return View(model);
                 }
-                _context.Notes.Update(newNote);
-                _context.SaveChanges();
+                foreach(var n in noteCategories)
+                {
+                    Category newCategory;
+                    if(!_context.Categories.Where(m=>m.Title==n.Category.Title).Any())
+                    {
+                        using(var transaction = _context.Database.BeginTransaction())
+                        {
+                            newCategory=new Category{Title=n.Category.Title};
+                            _context.Categories.Add(newCategory);
+                            _context.SaveChanges();
+                            transaction.Commit();
+                        }
+                    }
+                    else
+                    {
+                        newCategory=_context.Categories.Where(m=>m.Title==n.Category.Title).FirstOrDefault();
+                    }
+                    using(var transaction = _context.Database.BeginTransaction())
+                    {
+                        newNote.NoteCategories=noteCategories;
+                        _context.Notes.Update(newNote);
+                        _context.SaveChanges();
+                        transaction.Commit();
+                    }
+                    using(var transaction = _context.Database.BeginTransaction())
+                    {
+                        _context.NoteCategories.Add(new NoteCategory{NoteID=model.Note.NoteID,CategoryID=newCategory.CategoryID});
+                        _context.SaveChanges();
+                        transaction.Commit();
+                    }
+                }
             }
             return Index(DateTime.MinValue,DateTime.MinValue,"");
         }
