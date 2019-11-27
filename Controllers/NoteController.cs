@@ -23,7 +23,7 @@ namespace NTR2.Controllers
         public IActionResult Index(DateTime dateFrom, DateTime dateTo, string category="",int pageNumber=1)
         {
             if(dateFrom==DateTime.MinValue) dateFrom = DateTime.Today.AddYears(-1);
-            if(dateTo==DateTime.MinValue) dateTo = DateTime.Today.AddDays(1).AddMilliseconds(-1);
+            if(dateTo==DateTime.MinValue) dateTo = DateTime.Today.AddDays(1);
             if(category==null) category="";
             List <string> possibleCategories= new List<string>{};
             this.Notes=_context.Notes.ToList();
@@ -41,6 +41,10 @@ namespace NTR2.Controllers
                 }
             }
             PaginatedList<Note> list = new PaginatedList<Note>(notes,pageNumber,3);
+            TempData["category"]=category;
+            TempData["dateFrom"]=dateFrom.ToString();
+            TempData["dateTo"]=dateTo.ToString();
+            TempData["pageNumber"]=pageNumber;
             return View("Index",new NoteIndexViewModel(list,possibleCategories.ToArray(),category,dateFrom,dateTo));
         }
         public IActionResult Clear()
@@ -148,7 +152,7 @@ namespace NTR2.Controllers
             .Where(x => x.Value.Errors.Count > 0)
             .Select(x => new { x.Key, x.Value.Errors })
             .ToArray();
-            return Index(DateTime.MinValue,DateTime.MinValue,"");
+            return returnToIndex();
         }
         public IActionResult Edit(string title)
         {
@@ -178,7 +182,7 @@ namespace NTR2.Controllers
                     _context.Entry(model.Note).OriginalValues["Timestamp"] = model.Note.Timestamp;
                     await _context.SaveChangesAsync();
 
-                    return RedirectToAction("Index");
+                    return returnToIndex();
                 }
                 catch (DbUpdateConcurrencyException ex)
                 {
@@ -232,7 +236,7 @@ namespace NTR2.Controllers
             Note note=_context.Notes.Find(title);
             _context.Notes.Remove(note);
             _context.SaveChanges();
-            return Index(DateTime.MinValue,DateTime.MinValue);
+            return returnToIndex();
         }
         [HttpPost]
         public JsonResult doesFileNameExist(string title)
@@ -240,12 +244,12 @@ namespace NTR2.Controllers
         var file = _context.Notes.Find(title);
         return Json(file == null);
         }
-        private RedirectToActionResult returnToIndex()
+        public RedirectToActionResult returnToIndex()
         {
             RouteValueDictionary dict = new RouteValueDictionary();
-            dict.Add("category", TempData.Peek("chosenCategory"));
-            dict.Add("dateFrom", Convert.ToDateTime(TempData.Peek("startDate")));
-            dict.Add("dateTo", Convert.ToDateTime(TempData.Peek("lastDate")));
+            dict.Add("category", TempData.Peek("category"));
+            dict.Add("dateFrom", Convert.ToDateTime(TempData.Peek("dateFrom")));
+            dict.Add("dateTo", Convert.ToDateTime(TempData.Peek("dateTo")));
             dict.Add("pageNumber",TempData.Peek("pageNumber"));
 
             return RedirectToAction(nameof(Index), dict);
