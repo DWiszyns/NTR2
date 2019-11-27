@@ -27,13 +27,9 @@ namespace NTR2.Controllers
             if(category==null) category="";
             string[] possibleCategories= new string[]{};
             this.Notes=_context.Notes.ToList();
-            foreach(var n in Notes)
+            foreach(var n in _context.Categories.ToList())
             {
-                if(n.NoteCategories!=null && n.NoteCategories.Count!=0)foreach(var c in n.NoteCategories)
-                {
-                    if(!possibleCategories.Contains(c.Note.Title)) possibleCategories=possibleCategories.Append(c.Note.Title).ToArray();
-
-                }
+                possibleCategories.Append(n.Title);
             }
             var notes = new List<Note>();
             foreach(var n in Notes)
@@ -43,7 +39,7 @@ namespace NTR2.Controllers
                     notes.Add(n);
                 }
             }
-            PaginatedList<Note> list = new PaginatedList<Note>(notes,pageNumber,10);
+            PaginatedList<Note> list = new PaginatedList<Note>(notes,pageNumber,3);
             return View("Index",new NoteIndexViewModel(list,possibleCategories,category,dateFrom,dateTo));
         }
         public IActionResult Clear()
@@ -53,35 +49,22 @@ namespace NTR2.Controllers
         [HttpPost]
         public IActionResult AddCategory(NoteEditViewModel model,List<NoteCategory> noteCategories)
         {
+            model.Note.NoteCategories=noteCategories;
             if(ModelState.IsValid)
             {
                 if(String.IsNullOrEmpty(model.NewCategory))
                 {
                     ModelState.AddModelError("Category error","Empty category");
-                    if(Notes.Where(m=>m.Title==model.Note.Title).Any())
+                    if(_context.Notes.Where(m=>m.Title==model.Note.Title).Any())
                         return View("Edit",model);
                     else return View("Add",model);
                 }
                 else if(noteCategories.Where(m=>m.Category.Title==model.NewCategory).Any())
                 {
                     ModelState.AddModelError("Category error","Category already exists");
-                    if(Notes.Where(m=>m.Title==model.Note.Title).Any())
+                    if(_context.Notes.Where(m=>m.Title==model.Note.Title).Any())
                         return View("Edit",model);
                     else return View("Add",model);
-                }
-                if(_context.Notes.Where(m=>m.NoteID==model.Note.NoteID).Any())//check if it exists in database
-                {
-                    Category newCategory;
-                    if(!_context.Categories.Where(m=>m.Title==model.NewCategory).Any())
-                    {
-                        newCategory=new Category{Title=model.NewCategory};
-                        _context.Categories.Add(newCategory);
-                    }
-                    else
-                    {
-                        newCategory=_context.Categories.Where(m=>m.Title==model.NewCategory).FirstOrDefault();
-                    }
-                    _context.NoteCategories.Add(new NoteCategory{NoteID=model.Note.NoteID,CategoryID=newCategory.CategoryID});//not saving changes to database until save or add
                 }
                 model.Note.NoteCategories=noteCategories.Append(new NoteCategory
                     {Note=model.Note,Category=new Category(model.NewCategory)}).ToArray();
@@ -175,7 +158,6 @@ namespace NTR2.Controllers
         public async Task<IActionResult> Edit(NoteEditViewModel model,List<NoteCategory> noteCategories)
         {
             Note oldNote=_context.Notes.Find(model.Note.NoteID);
-            model.Note.NoteDate=DateTime.Today;
             oldNote =  _context.Notes.Include(i => i.NoteCategories).ThenInclude(noteCategories => noteCategories.Category).FirstOrDefault(note => note.NoteID == oldNote.NoteID);
             if (oldNote == null)
             {
@@ -185,6 +167,7 @@ namespace NTR2.Controllers
                     "Unable to save changes. The department was deleted by another user.");
                 return View(deletedNote);
             }
+            updateCategories(model.Note,noteCategories);
             if (await TryUpdateModelAsync<Note>(oldNote, "Note",
                 n=>n.Title, n=>n.Description,  n=>n.NoteDate, n=>n.NoteCategories))
             {
@@ -238,50 +221,7 @@ namespace NTR2.Controllers
                     }
                 }
             }
-            _context.SaveChanges();
             return View(model);            
-        //  //   Note model.Note = Notes.Where(m=>m.Title==model.OldTitle).FirstOrDefault();
-        //     Note newNote = _context.Notes.Include(i => i.NoteCategories).ThenInclude(noteCategories => noteCategories.Category).FirstOrDefault(note => note.NoteID == model.Note.NoteID);
-        //     if(ModelState.IsValid)
-        //     {
-        //         if(model.Note.Title!=model.OldTitle&&(Notes.Where(m=>m.Title==model.Note.Title).Any()||model.Note.Title==""))
-        //         {
-        //             ModelState.AddModelError("Title error","Title already taken");
-        //             return View(model);
-        //         }
-        //         foreach(var n in noteCategories)
-        //         {
-        //             Category newCategory;
-        //             if(!_context.Categories.Where(m=>m.Title==n.Category.Title).Any())
-        //             {
-        //                 using(var transaction = _context.Database.BeginTransaction())
-        //                 {
-        //                     newCategory=new Category{Title=n.Category.Title};
-        //                     _context.Categories.Add(newCategory);
-        //                     _context.SaveChanges();
-        //                     transaction.Commit();
-        //                 }
-        //             }
-        //             else
-        //             {
-        //                 newCategory=_context.Categories.Where(m=>m.Title==n.Category.Title).FirstOrDefault();
-        //             }
-        //             using(var transaction = _context.Database.BeginTransaction())
-        //             {
-        //                 newNote.NoteCategories=noteCategories;
-        //                 _context.Notes.Update(newNote);
-        //                 _context.SaveChanges();
-        //                 transaction.Commit();
-        //             }
-        //             using(var transaction = _context.Database.BeginTransaction())
-        //             {
-        //                 _context.NoteCategories.Add(new NoteCategory{NoteID=model.Note.NoteID,CategoryID=newCategory.CategoryID});
-        //                 _context.SaveChanges();
-        //                 transaction.Commit();
-        //             }
-        //         }
-        //     }
-            // return Index(DateTime.MinValue,DateTime.MinValue,"");
         }
         public IActionResult Delete(string title)
         {
@@ -327,6 +267,36 @@ namespace NTR2.Controllers
             dict.Add("pageNumber",TempData.Peek("pageNumber"));
 
             return RedirectToAction(nameof(Index), dict);
+        }
+        private void updateCategories(Note note,List<NoteCategory> noteCategories)
+        {
+            Note original = _context.Notes.Find(note.NoteID);
+            original =  _context.Notes.Include(i => i.NoteCategories).ThenInclude(nCategories => nCategories.Category).FirstOrDefault(n => n.NoteID == note.NoteID);
+            foreach (var category in original.NoteCategories) {
+                    if (!noteCategories.Where(c=>c.Category.CategoryID==category.CategoryID).Any()) {
+                        if (_context.NoteCategories.Where(i => i.CategoryID == category.Category.CategoryID && i.NoteID != note.NoteID).FirstOrDefault() == null) {
+                            _context.Categories.Remove(category.Category); //to delete category
+                        }
+                    }
+            }
+            foreach(var n in noteCategories)
+            {
+                if(!_context.NoteCategories.Where(nc=>nc.CategoryID==n.CategoryID&&nc.NoteID==note.NoteID).Any()){
+                    Category newCategory;
+                    if(!_context.Categories.Where(m=>m.Title==n.Category.Title).Any())
+                    {
+                            newCategory=new Category{Title=n.Category.Title};
+                            _context.Categories.Add(newCategory);
+                            _context.SaveChanges();
+                    }
+                    else
+                    {
+                        newCategory=_context.Categories.Where(m=>m.Title==n.Category.Title).FirstOrDefault();
+                    }
+                    _context.NoteCategories.Add(new NoteCategory{NoteID=note.NoteID,CategoryID=newCategory.CategoryID});
+                }
+            }
+            _context.SaveChanges();
         }
     }
 }
