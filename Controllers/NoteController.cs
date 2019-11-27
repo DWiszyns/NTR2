@@ -152,7 +152,7 @@ namespace NTR2.Controllers
             .Where(x => x.Value.Errors.Count > 0)
             .Select(x => new { x.Key, x.Value.Errors })
             .ToArray();
-            return returnToIndex();
+            return ReturnToIndex();
         }
         public IActionResult Edit(string title)
         {
@@ -182,7 +182,7 @@ namespace NTR2.Controllers
                     _context.Entry(model.Note).OriginalValues["Timestamp"] = model.Note.Timestamp;
                     await _context.SaveChangesAsync();
 
-                    return returnToIndex();
+                    return ReturnToIndex();
                 }
                 catch (DbUpdateConcurrencyException ex)
                 {
@@ -229,14 +229,21 @@ namespace NTR2.Controllers
             }
             return View(model);            
         }
-        public IActionResult Delete(string title)
+        public IActionResult Delete(int noteID)
         {
-            //Note note=Notes.Where(m=>m.Title==title).FirstOrDefault();
-            //Notes.Remove(note);
-            Note note=_context.Notes.Find(title);
+            var note = _context.Notes.Include(i => i.NoteCategories).ThenInclude(i => i.Category).FirstOrDefault(i => i.NoteID == noteID);
+            if (note == null) {
+                    return ReturnToIndex();
+            }
+
+            foreach (var category in note.NoteCategories) {
+                if (_context.NoteCategories.Where(i => i.CategoryID == category.Category.CategoryID && i.NoteID != noteID).FirstOrDefault() == null) {
+                    _context.Categories.Remove(category.Category);
+                }
+            }
             _context.Notes.Remove(note);
             _context.SaveChanges();
-            return returnToIndex();
+            return ReturnToIndex();
         }
         [HttpPost]
         public JsonResult doesFileNameExist(string title)
@@ -244,7 +251,7 @@ namespace NTR2.Controllers
         var file = _context.Notes.Find(title);
         return Json(file == null);
         }
-        public RedirectToActionResult returnToIndex()
+        public RedirectToActionResult ReturnToIndex()
         {
             RouteValueDictionary dict = new RouteValueDictionary();
             dict.Add("category", TempData.Peek("category"));
