@@ -12,6 +12,7 @@
                 data-val-maxlength-max="5000"
                 data-val-maxlength="The field Description must be a string or array type with a maximum length of '5000'."
                 data-val="true" rows="4" cols="50" style="overflow:auto;resize:none" asp-for="PromptDescription"></textarea> <br />
+            @Html.HiddenFor(m=>m.Note.NoteID)
             @Html.HiddenFor(m=>m.Note.NoteDate)
             @Html.HiddenFor(m=>m.OldTitle)
             @Html.HiddenFor(m=>m.Note.Timestamp)
@@ -27,7 +28,9 @@
         </form>
         <form asp-controller="Note" asp-action="AddCategory" asp-action="AddCategory">
             @Html.ValidationSummary(true)
+            @Html.HiddenFor(m=>m.Note.NoteID)
             @Html.HiddenFor(m=>m.Note.Title)
+            @Html.HiddenFor(m=>m.Note.NoteDate)
             @Html.HiddenFor(m=>m.Note.Description)
             @Html.HiddenFor(m=>m.OldTitle)
             @Html.HiddenFor(m=>m.Note.Timestamp)
@@ -46,6 +49,7 @@
         </form>
 <form method="post" asp-action="RemoveCategories">
     @Html.ValidationSummary(true)
+    @Html.HiddenFor(m=>m.Note.NoteID)
     @Html.HiddenFor(m=>m.Note.Title)
     @Html.HiddenFor(m=>m.Note.Description)
     @Html.HiddenFor(m=>m.Note.NoteDate)

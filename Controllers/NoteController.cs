@@ -1,15 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using NTR2.Models;
-using NTR2.Repositories;
-using NTR2;
 using NTR2.Data;
 using Microsoft.EntityFrameworkCore;
-
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Routing;
 
 namespace NTR2.Controllers
 {
@@ -51,7 +48,7 @@ namespace NTR2.Controllers
         }
         public IActionResult Clear()
         {
-            return Index(DateTime.MinValue,DateTime.MinValue);
+            return RedirectToAction("Index");
         }
         [HttpPost]
         public IActionResult AddCategory(NoteEditViewModel model,List<NoteCategory> noteCategories)
@@ -71,6 +68,20 @@ namespace NTR2.Controllers
                     if(Notes.Where(m=>m.Title==model.Note.Title).Any())
                         return View("Edit",model);
                     else return View("Add",model);
+                }
+                if(_context.Notes.Where(m=>m.NoteID==model.Note.NoteID).Any())//check if it exists in database
+                {
+                    Category newCategory;
+                    if(!_context.Categories.Where(m=>m.Title==model.NewCategory).Any())
+                    {
+                        newCategory=new Category{Title=model.NewCategory};
+                        _context.Categories.Add(newCategory);
+                    }
+                    else
+                    {
+                        newCategory=_context.Categories.Where(m=>m.Title==model.NewCategory).FirstOrDefault();
+                    }
+                    _context.NoteCategories.Add(new NoteCategory{NoteID=model.Note.NoteID,CategoryID=newCategory.CategoryID});//not saving changes to database until save or add
                 }
                 model.Note.NoteCategories=noteCategories.Append(new NoteCategory
                     {Note=model.Note,Category=new Category(model.NewCategory)}).ToArray();
@@ -161,50 +172,116 @@ namespace NTR2.Controllers
             return View(new NoteEditViewModel(n));
         }
         [HttpPost]
-        public IActionResult Edit(NoteEditViewModel model,List<NoteCategory> noteCategories)
-        {            
-            Note oldNote = Notes.Where(m=>m.Title==model.OldTitle).FirstOrDefault();
-            Note newNote = model.Note;
-            if(ModelState.IsValid)
+        public async Task<IActionResult> Edit(NoteEditViewModel model,List<NoteCategory> noteCategories)
+        {
+            Note oldNote=_context.Notes.Find(model.Note.NoteID);
+            model.Note.NoteDate=DateTime.Today;
+            oldNote =  _context.Notes.Include(i => i.NoteCategories).ThenInclude(noteCategories => noteCategories.Category).FirstOrDefault(note => note.NoteID == oldNote.NoteID);
+            if (oldNote == null)
             {
-                if(model.Note.Title!=model.OldTitle&&(Notes.Where(m=>m.Title==model.Note.Title).Any()||model.Note.Title==""))
+                Note deletedNote = new Note();
+                await TryUpdateModelAsync(deletedNote);
+                ModelState.AddModelError(string.Empty,
+                    "Unable to save changes. The department was deleted by another user.");
+                return View(deletedNote);
+            }
+            if (await TryUpdateModelAsync<Note>(oldNote, "Note",
+                n=>n.Title, n=>n.Description,  n=>n.NoteDate, n=>n.NoteCategories))
+            {
+                try
                 {
-                    ModelState.AddModelError("Title error","Title already taken");
-                    return View(model);
+                    _context.Entry(model.Note).OriginalValues["Timestamp"] = model.Note.Timestamp;
+                    await _context.SaveChangesAsync();
+
+                    return RedirectToAction("Index");
                 }
-                foreach(var n in noteCategories)
+                catch (DbUpdateConcurrencyException ex)
                 {
-                    Category newCategory;
-                    if(!_context.Categories.Where(m=>m.Title==n.Category.Title).Any())
+                    var entry = ex.Entries.Single();
+                    var clientValues = (Note)entry.Entity;
+                    var databaseEntry = entry.GetDatabaseValues();
+                    if (databaseEntry == null)
                     {
-                        using(var transaction = _context.Database.BeginTransaction())
-                        {
-                            newCategory=new Category{Title=n.Category.Title};
-                            _context.Categories.Add(newCategory);
-                            _context.SaveChanges();
-                            transaction.Commit();
-                        }
+                        ModelState.AddModelError(string.Empty,
+                            "Unable to save changes. The department was deleted by another user.");
                     }
                     else
                     {
-                        newCategory=_context.Categories.Where(m=>m.Title==n.Category.Title).FirstOrDefault();
-                    }
-                    using(var transaction = _context.Database.BeginTransaction())
-                    {
-                        newNote.NoteCategories=noteCategories;
-                        _context.Notes.Update(newNote);
-                        _context.SaveChanges();
-                        transaction.Commit();
-                    }
-                    using(var transaction = _context.Database.BeginTransaction())
-                    {
-                        _context.NoteCategories.Add(new NoteCategory{NoteID=model.Note.NoteID,CategoryID=newCategory.CategoryID});
-                        _context.SaveChanges();
-                        transaction.Commit();
+                        var databaseValues = (Note)databaseEntry.ToObject();
+
+                        if (databaseValues.Title != clientValues.Title)
+                            ModelState.AddModelError("Title", "Current value: "
+                                + databaseValues.Title);
+                        if (databaseValues.Description != clientValues.Description)
+                            ModelState.AddModelError("Description", "Current value: "
+                                + String.Format("{0:c}", databaseValues.Description));
+                        if (databaseValues.NoteDate != clientValues.NoteDate)
+                            ModelState.AddModelError("NoteDate", "Current value: "
+                                + String.Format("{0:d}", databaseValues.NoteDate));
+                        if (databaseValues.NoteCategories != clientValues.NoteCategories)
+                        {
+                            databaseValues =  _context.Notes.Include(i => i.NoteCategories).ThenInclude(noteCategories => noteCategories.Category).FirstOrDefault(note => note.NoteID == model.Note.NoteID);
+                            string currentCategories="";
+                            foreach(var n in databaseValues.NoteCategories)
+                            {
+                                currentCategories+=(n.Category.Title+"\n");
+                            }
+                            ModelState.AddModelError("Categories","Current values:\n"+currentCategories);
+
+                        }
+                        ModelState.AddModelError(string.Empty, "The record you attempted to edit "
+                            + "was modified by another user after you got the original value. The "
+                            + "edit operation was canceled and the current values in the database "
+                            + "have been displayed. If you still want to edit this record, click "
+                            + "the Save button again. Otherwise click the Back to List hyperlink.");
+                        model.Note.Timestamp = databaseValues.Timestamp;
                     }
                 }
             }
-            return Index(DateTime.MinValue,DateTime.MinValue,"");
+            _context.SaveChanges();
+            return View(model);            
+        //  //   Note model.Note = Notes.Where(m=>m.Title==model.OldTitle).FirstOrDefault();
+        //     Note newNote = _context.Notes.Include(i => i.NoteCategories).ThenInclude(noteCategories => noteCategories.Category).FirstOrDefault(note => note.NoteID == model.Note.NoteID);
+        //     if(ModelState.IsValid)
+        //     {
+        //         if(model.Note.Title!=model.OldTitle&&(Notes.Where(m=>m.Title==model.Note.Title).Any()||model.Note.Title==""))
+        //         {
+        //             ModelState.AddModelError("Title error","Title already taken");
+        //             return View(model);
+        //         }
+        //         foreach(var n in noteCategories)
+        //         {
+        //             Category newCategory;
+        //             if(!_context.Categories.Where(m=>m.Title==n.Category.Title).Any())
+        //             {
+        //                 using(var transaction = _context.Database.BeginTransaction())
+        //                 {
+        //                     newCategory=new Category{Title=n.Category.Title};
+        //                     _context.Categories.Add(newCategory);
+        //                     _context.SaveChanges();
+        //                     transaction.Commit();
+        //                 }
+        //             }
+        //             else
+        //             {
+        //                 newCategory=_context.Categories.Where(m=>m.Title==n.Category.Title).FirstOrDefault();
+        //             }
+        //             using(var transaction = _context.Database.BeginTransaction())
+        //             {
+        //                 newNote.NoteCategories=noteCategories;
+        //                 _context.Notes.Update(newNote);
+        //                 _context.SaveChanges();
+        //                 transaction.Commit();
+        //             }
+        //             using(var transaction = _context.Database.BeginTransaction())
+        //             {
+        //                 _context.NoteCategories.Add(new NoteCategory{NoteID=model.Note.NoteID,CategoryID=newCategory.CategoryID});
+        //                 _context.SaveChanges();
+        //                 transaction.Commit();
+        //             }
+        //         }
+        //     }
+            // return Index(DateTime.MinValue,DateTime.MinValue,"");
         }
         public IActionResult Delete(string title)
         {
@@ -220,6 +297,36 @@ namespace NTR2.Controllers
         {
         var file = _context.Notes.Find(title);
         return Json(file == null);
+        }
+        private RedirectToActionResult returnToIndex()
+        {
+            RouteValueDictionary dict = new RouteValueDictionary();
+            dict.Add("category", TempData.Peek("chosenCategory"));
+            dict.Add("dateFrom", Convert.ToDateTime(TempData.Peek("startDate")));
+            dict.Add("dateTo", Convert.ToDateTime(TempData.Peek("lastDate")));
+            dict.Add("pageNumber",TempData.Peek("pageNumber"));
+
+            return RedirectToAction(nameof(Index), dict);
+        }
+        private RedirectToActionResult returnToAdd(NoteEditViewModel model)
+        {
+            RouteValueDictionary dict = new RouteValueDictionary();
+            dict.Add("chosenCategory", TempData.Peek("chosenCategory"));
+            dict.Add("start_date", Convert.ToDateTime(TempData.Peek("startDate")));
+            dict.Add("last_date", Convert.ToDateTime(TempData.Peek("lastDate")));
+            dict.Add("pageNumber",TempData.Peek("pageNumber"));
+
+            return RedirectToAction(nameof(Index), dict);
+        }
+        private RedirectToActionResult returnToEdit()
+        {
+            RouteValueDictionary dict = new RouteValueDictionary();
+            dict.Add("chosenCategory", TempData.Peek("chosenCategory"));
+            dict.Add("start_date", Convert.ToDateTime(TempData.Peek("startDate")));
+            dict.Add("last_date", Convert.ToDateTime(TempData.Peek("lastDate")));
+            dict.Add("pageNumber",TempData.Peek("pageNumber"));
+
+            return RedirectToAction(nameof(Index), dict);
         }
     }
 }
