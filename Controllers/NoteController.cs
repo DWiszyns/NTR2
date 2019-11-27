@@ -25,22 +25,23 @@ namespace NTR2.Controllers
             if(dateFrom==DateTime.MinValue) dateFrom = DateTime.Today.AddYears(-1);
             if(dateTo==DateTime.MinValue) dateTo = DateTime.Today.AddDays(1).AddMilliseconds(-1);
             if(category==null) category="";
-            string[] possibleCategories= new string[]{};
+            List <string> possibleCategories= new List<string>{};
             this.Notes=_context.Notes.ToList();
             foreach(var n in _context.Categories.ToList())
             {
-                possibleCategories.Append(n.Title);
+                possibleCategories.Add(n.Title);
             }
             var notes = new List<Note>();
             foreach(var n in Notes)
             {
-                 if(n.NoteDate>=dateFrom && n.NoteDate<=dateTo && (category==""||n.NoteCategories.Where(m=>m.Category.Title==category).Any()))
+                Note tmpNote = _context.Notes.Include(i => i.NoteCategories).ThenInclude(noteCategories => noteCategories.Category).FirstOrDefault(note => note.NoteID == n.NoteID);
+                if(tmpNote.NoteDate>=dateFrom && tmpNote.NoteDate<=dateTo && (category==""||tmpNote.NoteCategories.Where(m=>m.Category.Title==category).Any()))
                 {
                     notes.Add(n);
                 }
             }
             PaginatedList<Note> list = new PaginatedList<Note>(notes,pageNumber,3);
-            return View("Index",new NoteIndexViewModel(list,possibleCategories,category,dateFrom,dateTo));
+            return View("Index",new NoteIndexViewModel(list,possibleCategories.ToArray(),category,dateFrom,dateTo));
         }
         public IActionResult Clear()
         {
@@ -78,9 +79,10 @@ namespace NTR2.Controllers
         [HttpPost]
         public IActionResult RemoveCategories(NoteEditViewModel model,List<NoteCategory> noteCategories)
         {
+            model.Note =  _context.Notes.Include(i => i.NoteCategories).ThenInclude(nc => nc.Category).FirstOrDefault(note => note.NoteID == model.Note.NoteID);
             foreach(var c in model.CategoriesToRemove ?? new string[] { })
             {
-                model.Note.NoteCategories=model.Note.NoteCategories.Where(v=>v.Category.Title!=c).ToArray();
+                model.Note.NoteCategories=model.Note.NoteCategories.Where(v=>v.Category.CategoryID.ToString()!=c).ToArray();
             }
             model.CategoriesToRemove=new string[]{};
             if(Notes.Where(m=>m.Title==model.Note.Title).Any())
@@ -277,8 +279,12 @@ namespace NTR2.Controllers
                         if (_context.NoteCategories.Where(i => i.CategoryID == category.Category.CategoryID && i.NoteID != note.NoteID).FirstOrDefault() == null) {
                             _context.Categories.Remove(category.Category); //to delete category
                         }
+                        else{
+                            _context.NoteCategories.Remove(category); //to delete category
+                        }
                     }
             }
+            _context.SaveChanges();
             foreach(var n in noteCategories)
             {
                 if(!_context.NoteCategories.Where(nc=>nc.CategoryID==n.CategoryID&&nc.NoteID==note.NoteID).Any()){
