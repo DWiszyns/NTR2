@@ -182,7 +182,7 @@ namespace NTR2.Controllers
             oldNote =  _context.Notes.Include(i => i.NoteCategories).ThenInclude(noteCategories => noteCategories.Category).FirstOrDefault(note => note.NoteID == oldNote.NoteID);
             if(ModelState.IsValid)
             {
-                model.Note =  _context.Notes.Include(i => i.NoteCategories).ThenInclude(noteCategories => noteCategories.Category).FirstOrDefault(note => note.NoteID == model.Note.NoteID);
+                model.Note.NoteCategories = noteCategories;
                 if(model.Note.Title=="write some title"||model.Note.Title=="")
                 {
                     ModelState.AddModelError("Title error","Wrong title");
@@ -236,6 +236,7 @@ namespace NTR2.Controllers
                     }
                 }
             }
+            model.Note =  _context.Notes.Include(i => i.NoteCategories).ThenInclude(noteCategories => noteCategories.Category).FirstOrDefault(note => note.NoteID == model.Note.NoteID);
             return View(model);            
         }
         public IActionResult Delete(int noteID)

@@ -13,13 +13,12 @@
                     data-val-required="The Description field is required."
                     data-val-maxlength-max="5000"
                     data-val-maxlength="The field Description must be a string or array type with a maximum length of '5000'."
-                    data-val="true" rows="4" cols="50" style="overflow:auto;resize:none" asp-for="PromptDescription"></textarea> <br />
+                    data-val="true" rows="4" cols="50" style="overflow:auto;" asp-for="PromptDescription"></textarea> <br />
                 @Html.ValidationMessage("Description")
                 @Html.HiddenFor(m=>m.Note.NoteID)
                 <input type="hidden" name="Note.NoteDate" value="@System.DateTime.Now ">
-
-                @Html.HiddenFor(m=>m.OldTitle)
                 @Html.HiddenFor(m=>m.Note.Timestamp)
+                @Html.HiddenFor(m=>m.OldTitle)
                 @for (int i = 0; i < Model.Note.NoteCategories.Count; ++i)
                 {
                     <input type="hidden" name="NoteCategories[@i].NoteID" value="@Model.Note.NoteCategories.ToList()[i].NoteID" />
