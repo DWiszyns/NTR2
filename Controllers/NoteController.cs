@@ -154,9 +154,16 @@ namespace NTR2.Controllers
             .ToArray();
             return ReturnToIndex();
         }
-        public IActionResult Edit(string title)
+        public IActionResult Edit(int NoteID)
         {
-            Note n = Notes.Where(m => m.Title == title).FirstOrDefault();
+            Note n = Notes.Where(m => m.NoteID == NoteID).FirstOrDefault();
+            if (n == null)
+            {
+                Note deletedNote = new Note();
+                ModelState.AddModelError(string.Empty,
+                    "Note no longer exists.");
+                return ReturnToIndex();
+            }
             n =  _context.Notes.Include(i => i.NoteCategories).ThenInclude(noteCategories => noteCategories.Category).FirstOrDefault(note => note.NoteID == n.NoteID);
             return View(new NoteEditViewModel(n));
         }
@@ -173,15 +180,14 @@ namespace NTR2.Controllers
                 return View(new NoteEditViewModel(deletedNote));
             }
             oldNote =  _context.Notes.Include(i => i.NoteCategories).ThenInclude(noteCategories => noteCategories.Category).FirstOrDefault(note => note.NoteID == oldNote.NoteID);
-            updateCategories(model.Note,noteCategories);
+            _context.Entry(model.Note).OriginalValues["Timestamp"] = oldNote.Timestamp;
             if (await TryUpdateModelAsync<Note>(oldNote, "Note",
-                n=>n.Title, n=>n.Description,  n=>n.NoteDate, n=>n.NoteCategories))
+                n=>n.Title, n=>n.Description,  n=>n.NoteDate))
             {
                 try
                 {
-                    _context.Entry(model.Note).OriginalValues["Timestamp"] = model.Note.Timestamp;
-                    await _context.SaveChangesAsync();
-
+                    await _context.SaveChangesAsync();                    
+                    updateCategories(model.Note,noteCategories);
                     return ReturnToIndex();
                 }
                 catch (DbUpdateConcurrencyException ex)
