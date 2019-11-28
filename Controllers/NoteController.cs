@@ -180,56 +180,59 @@ namespace NTR2.Controllers
                 return View(new NoteEditViewModel(deletedNote));
             }
             oldNote =  _context.Notes.Include(i => i.NoteCategories).ThenInclude(noteCategories => noteCategories.Category).FirstOrDefault(note => note.NoteID == oldNote.NoteID);
-            _context.Entry(model.Note).OriginalValues["Timestamp"] = oldNote.Timestamp;
-            if (await TryUpdateModelAsync<Note>(oldNote, "Note",
-                n=>n.Title, n=>n.Description,  n=>n.NoteDate))
+            if(ModelState.IsValid)
             {
-                try
+                model.Note =  _context.Notes.Include(i => i.NoteCategories).ThenInclude(noteCategories => noteCategories.Category).FirstOrDefault(note => note.NoteID == model.Note.NoteID);
+                if(model.Note.Title=="write some title"||model.Note.Title=="")
                 {
-                    await _context.SaveChangesAsync();                    
-                    updateCategories(model.Note,noteCategories);
-                    return ReturnToIndex();
+                    ModelState.AddModelError("Title error","Wrong title");
+                    return View(model);
                 }
-                catch (DbUpdateConcurrencyException ex)
+                else if(_context.Notes.Where(m=>m.Title==model.Note.Title&&m.NoteID!=model.Note.NoteID).Any())
                 {
-                    var entry = ex.Entries.Single();
-                    var clientValues = (Note)entry.Entity;
-                    var databaseEntry = entry.GetDatabaseValues();
-                    if (databaseEntry == null)
+                    ModelState.AddModelError("Title error","Title already taken");
+                    return View(model);
+                }
+                _context.Entry(oldNote).Property("Timestamp").OriginalValue = model.Note.Timestamp;
+                if (await TryUpdateModelAsync<Note>(oldNote, "Note",
+                    n=>n.Title, n=>n.Description,  n=>n.NoteDate))
+                {
+                    try
                     {
-                        ModelState.AddModelError(string.Empty,
-                            "Unable to save changes. The note was deleted by another user.");
+                        await _context.SaveChangesAsync();                    
+                        updateCategories(model.Note,noteCategories);
+                        return ReturnToIndex();
                     }
-                    else
+                    catch (DbUpdateConcurrencyException ex)
                     {
-                        var databaseValues = (Note)databaseEntry.ToObject();
-
-                        if (databaseValues.Title != clientValues.Title)
-                            ModelState.AddModelError("Title", "Current value: "
-                                + databaseValues.Title);
-                        if (databaseValues.Description != clientValues.Description)
-                            ModelState.AddModelError("Description", "Current value: "
-                                + String.Format("{0:c}", databaseValues.Description));
-                        if (databaseValues.NoteDate != clientValues.NoteDate)
-                            ModelState.AddModelError("NoteDate", "Current value: "
-                                + String.Format("{0:d}", databaseValues.NoteDate));
-                        if (databaseValues.NoteCategories != clientValues.NoteCategories)
+                        var entry = ex.Entries.Single();
+                        var clientValues = (Note)entry.Entity;
+                        var databaseEntry = entry.GetDatabaseValues();
+                        if (databaseEntry == null)
                         {
-                            databaseValues =  _context.Notes.Include(i => i.NoteCategories).ThenInclude(noteCategories => noteCategories.Category).FirstOrDefault(note => note.NoteID == model.Note.NoteID);
-                            string currentCategories="";
-                            foreach(var n in databaseValues.NoteCategories)
-                            {
-                                currentCategories+=(n.Category.Title+"\n");
-                            }
-                            ModelState.AddModelError("Categories","Current values:\n"+currentCategories);
-
+                            ModelState.AddModelError(string.Empty,
+                                "Unable to save changes. The note was deleted by another user.");
                         }
-                        ModelState.AddModelError(string.Empty, "The record you attempted to edit "
-                            + "was modified by another user after you got the original value. The "
-                            + "edit operation was canceled and the current values in the database "
-                            + "have been displayed. If you still want to edit this record, click "
-                            + "the Save button again. Otherwise click the Back to List hyperlink.");
-                        model.Note.Timestamp = databaseValues.Timestamp;
+                        else
+                        {
+                            var databaseValues = (Note)databaseEntry.ToObject();
+
+                            if (databaseValues.Title != clientValues.Title)
+                                ModelState.AddModelError("Title", "Current value: "
+                                    + databaseValues.Title);
+                            if (databaseValues.Description != clientValues.Description)
+                                ModelState.AddModelError("Description", "Current value: "
+                                    + String.Format("{0:c}", databaseValues.Description));
+                            if (databaseValues.NoteDate != clientValues.NoteDate)
+                                ModelState.AddModelError("NoteDate", "Current value: "
+                                    + String.Format("{0:d}", databaseValues.NoteDate));
+                            ModelState.AddModelError(string.Empty, "The record you attempted to edit "
+                                + "was modified by another user after you got the original value. The "
+                                + "edit operation was canceled and the current values in the database "
+                                + "have been displayed. If you still want to edit this record, click "
+                                + "the Save button again. Otherwise click the Back to List hyperlink.");
+                            model.Note.Timestamp = databaseValues.Timestamp;
+                        }
                     }
                 }
             }
