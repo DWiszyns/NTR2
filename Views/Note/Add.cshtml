@@ -1,87 +1,93 @@
 @model NoteEditViewModel
 
-<div class="col-md-4">
-        @Html.ValidationSummary(true)
-        <form asp-controller="Note" asp-action="Add" method="post">
-            <label asp-for="Note.Title" class="control-label"></label>
-            <input asp-for="Note.Title" class="form-control" /> <br/>
-            @Html.ValidationMessage("Title error")
-            <br/>
-            <label asp-for="Note.Description" class="control-label"></label>
-            <textarea asp-for="Note.Description"
-                data-val-required="The Description field is required."
-                data-val-maxlength-max="5000"
-                data-val-maxlength="The field Description must be a string or array type with a maximum length of '5000'."
-                data-val="true" rows="4" cols="50" style="overflow:auto;resize:none" asp-for="PromptDescription"></textarea> <br />
-            <br/><br/>
-            @Html.HiddenFor(m=>m.Note.NoteDate)
-            @for (int i = 0; i < Model.Note.NoteCategories.Count; ++i)
-            {
-                <input type="hidden" name="NoteCategories.Index" value="@i" />
-                <input type="hidden" name="NoteCategories[@i].Category.CategoryID" value="@Model.Note.NoteCategories.ToList()[i].Category.CategoryID" />
-                <input type="hidden" name="NoteCategories[@i].Category.Title" value="@Model.Note.NoteCategories.ToList()[i].Category.Title" />
-                <input type="hidden" name="NoteCategories[@i].Note.NoteID" value="@Model.Note.NoteCategories.ToList()[i].Note.NoteID" />
-                <input type="hidden" name="NoteCategories[@i].Note.Title" value="@Model.Note.NoteCategories.ToList()[i].Note.Title" />
-            }
-            <input type="submit" value="Create" class="btn btn-primary" />
-        </form>
-        <form asp-controller="Note" asp-action="AddCategory">
-            @Html.HiddenFor(m=>m.Note.Title)
-            @Html.HiddenFor(m=>m.Note.Description)
-            @Html.HiddenFor(m=>m.Note.NoteDate)
-            @Html.HiddenFor(m=>m.Note.Timestamp)
-            @for (int i = 0; i < Model.Note.NoteCategories.Count; ++i)
-            {
-                <input type="hidden" name="NoteCategories.Index" value="@i" />
-                <input type="hidden" name="NoteCategories[@i].Category.CategoryID" value="@Model.Note.NoteCategories.ToList()[i].Category.CategoryID" />
-                <input type="hidden" name="NoteCategories[@i].Category.Title" value="@Model.Note.NoteCategories.ToList()[i].Category.Title" />
-                <input type="hidden" name="NoteCategories[@i].Note.NoteID" value="@Model.Note.NoteCategories.ToList()[i].Note.NoteID" />
-                <input type="hidden" name="NoteCategories[@i].Note.Title" value="@Model.Note.NoteCategories.ToList()[i].Note.Title" />
-            }
-            <label asp-for="NewCategory" class="control-label"></label>
-            <input asp-for="NewCategory" class="form-control" /><br/>
-            <input type="submit" value="Add" class="btn btn-primary" />
-            @Html.ValidationMessage("Category error")
-        </form>
-<form method="post" asp-action="RemoveCategories">
-    @Html.HiddenFor(m=>m.Note.Title)
-    @Html.HiddenFor(m=>m.Note.Description)
-    @Html.HiddenFor(m=>m.Note.NoteDate)
-    @Html.HiddenFor(m=>m.Note.Timestamp)
-    <h2>In NoteCategories:</h2>
-    @if(@Model.Note.NoteCategories.Count!=0)
-    {
-    <table class="table">
-        <thead>
-            <tr>
-                <td>Name</td>
-            </tr>
-        </thead>
-        <tbody>
-             @for (int i = 0; i < Model.Note.NoteCategories.Count; ++i)
-            {
-                <tr>
-                    <td>
-                            <input type="hidden" name="NoteCategories.Index" value="@i" />
-                            <input type="hidden" name="NoteCategories[@i].Category.CategoryID" value="@Model.Note.NoteCategories.ToList()[i].Category.CategoryID" />
-                            <input type="hidden" name="NoteCategories[@i].Category.Title" value="@Model.Note.NoteCategories.ToList()[i].Category.Title" />
-                            <input type="hidden" name="NoteCategories[@i].Note.NoteID" value="@Model.Note.NoteCategories.ToList()[i].Note.NoteID" />
-                            <input type="hidden" name="NoteCategories[@i].Note.Title" value="@Model.Note.NoteCategories.ToList()[i].Note.Title" />
-                            @Html.TextBoxFor(item => Model.Note.NoteCategories.ToList()[i].Category.Title, new { @class = "form-control", @readonly = "readonly" })
-                    </td>
-                    <td>
-                        <input type="checkbox" name="CategoriesToRemove" value="@Model.Note.NoteCategories.ToList()[i].Category.Title">
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-    <input type="submit" value="Remove categories" class="btn btn-primary" />
-    }
-    <br/>
-</form>
-<a asp-action="ReturnToIndex" asp-controller="Note">Back to list</a>
-<div>
+<div class="container" style="min-height: 100%;">
+    <div class="row"> 
+        <div class="col-sm-6" >
+            @Html.ValidationSummary(true)
+            <form asp-controller="Note" asp-action="Add" method="post">
+                <label asp-for="Note.Title" class="control-label"></label>
+                <input asp-for="Note.Title" class="form-control" /> <br/>
+                @Html.ValidationMessage("Title error")
+                <br/>
+                <label asp-for="Note.Description" class="control-label"></label>
+                <textarea asp-for="Note.Description"
+                    data-val-required="The Description field is required."
+                    data-val-maxlength-max="5000"
+                    data-val-maxlength="The field Description must be a string or array type with a maximum length of '5000'."
+                    data-val="true" rows="4" cols="50" style="overflow:auto;resize:none" asp-for="PromptDescription"></textarea> <br />
+                <br/><br/>
+                @Html.HiddenFor(m=>m.Note.NoteDate)
+                @for (int i = 0; i < Model.Note.NoteCategories.Count; ++i)
+                {
+                    <input type="hidden" name="NoteCategories.Index" value="@i" />
+                    <input type="hidden" name="NoteCategories[@i].Category.CategoryID" value="@Model.Note.NoteCategories.ToList()[i].Category.CategoryID" />
+                    <input type="hidden" name="NoteCategories[@i].Category.Title" value="@Model.Note.NoteCategories.ToList()[i].Category.Title" />
+                    <input type="hidden" name="NoteCategories[@i].Note.NoteID" value="@Model.Note.NoteCategories.ToList()[i].Note.NoteID" />
+                    <input type="hidden" name="NoteCategories[@i].Note.Title" value="@Model.Note.NoteCategories.ToList()[i].Note.Title" />
+                }
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </form>
+        </div>
+        <div class="col-sm-6">
+            <form asp-controller="Note" asp-action="AddCategory">
+                @Html.HiddenFor(m=>m.Note.Title)
+                @Html.HiddenFor(m=>m.Note.Description)
+                @Html.HiddenFor(m=>m.Note.NoteDate)
+                @Html.HiddenFor(m=>m.Note.Timestamp)
+                @for (int i = 0; i < Model.Note.NoteCategories.Count; ++i)
+                {
+                    <input type="hidden" name="NoteCategories.Index" value="@i" />
+                    <input type="hidden" name="NoteCategories[@i].Category.CategoryID" value="@Model.Note.NoteCategories.ToList()[i].Category.CategoryID" />
+                    <input type="hidden" name="NoteCategories[@i].Category.Title" value="@Model.Note.NoteCategories.ToList()[i].Category.Title" />
+                    <input type="hidden" name="NoteCategories[@i].Note.NoteID" value="@Model.Note.NoteCategories.ToList()[i].Note.NoteID" />
+                    <input type="hidden" name="NoteCategories[@i].Note.Title" value="@Model.Note.NoteCategories.ToList()[i].Note.Title" />
+                }
+                <label asp-for="NewCategory" class="control-label"></label>
+                <input asp-for="NewCategory" class="form-control" /><br/>
+                <input type="submit" value="Add" class="btn btn-primary" />
+                @Html.ValidationMessage("Category error")
+            </form>
+            <form method="post" asp-action="RemoveCategories">
+                @Html.HiddenFor(m=>m.Note.Title)
+                @Html.HiddenFor(m=>m.Note.Description)
+                @Html.HiddenFor(m=>m.Note.NoteDate)
+                @Html.HiddenFor(m=>m.Note.Timestamp)
+                <h2>In NoteCategories:</h2>
+                @if(@Model.Note.NoteCategories.Count!=0)
+                {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <td>Name</td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 0; i < Model.Note.NoteCategories.Count; ++i)
+                        {
+                            <tr>
+                                <td>
+                                        <input type="hidden" name="NoteCategories.Index" value="@i" />
+                                        <input type="hidden" name="NoteCategories[@i].Category.CategoryID" value="@Model.Note.NoteCategories.ToList()[i].Category.CategoryID" />
+                                        <input type="hidden" name="NoteCategories[@i].Category.Title" value="@Model.Note.NoteCategories.ToList()[i].Category.Title" />
+                                        <input type="hidden" name="NoteCategories[@i].Note.NoteID" value="@Model.Note.NoteCategories.ToList()[i].Note.NoteID" />
+                                        <input type="hidden" name="NoteCategories[@i].Note.Title" value="@Model.Note.NoteCategories.ToList()[i].Note.Title" />
+                                        @Html.TextBoxFor(item => Model.Note.NoteCategories.ToList()[i].Category.Title, new { @class = "form-control", @readonly = "readonly" })
+                                </td>
+                                <td>
+                                    <input type="checkbox" name="CategoriesToRemove" value="@Model.Note.NoteCategories.ToList()[i].Category.Title">
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                <input type="submit" value="Remove categories" class="btn btn-primary" />
+                }
+                <br/>
+            </form>
+            </div>
+        </div>
+    <a asp-action="ReturnToIndex" asp-controller="Note">Back to list</a>
+</div>
 
 @section Scripts{
      @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}

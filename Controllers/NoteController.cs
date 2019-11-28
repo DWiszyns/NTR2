@@ -164,15 +164,15 @@ namespace NTR2.Controllers
         public async Task<IActionResult> Edit(NoteEditViewModel model,List<NoteCategory> noteCategories)
         {
             Note oldNote=_context.Notes.Find(model.Note.NoteID);
-            oldNote =  _context.Notes.Include(i => i.NoteCategories).ThenInclude(noteCategories => noteCategories.Category).FirstOrDefault(note => note.NoteID == oldNote.NoteID);
             if (oldNote == null)
             {
                 Note deletedNote = new Note();
                 await TryUpdateModelAsync(deletedNote);
                 ModelState.AddModelError(string.Empty,
-                    "Unable to save changes. The department was deleted by another user.");
-                return View(deletedNote);
+                    "Unable to save changes. The note was deleted by another user.");
+                return View(new NoteEditViewModel(deletedNote));
             }
+            oldNote =  _context.Notes.Include(i => i.NoteCategories).ThenInclude(noteCategories => noteCategories.Category).FirstOrDefault(note => note.NoteID == oldNote.NoteID);
             updateCategories(model.Note,noteCategories);
             if (await TryUpdateModelAsync<Note>(oldNote, "Note",
                 n=>n.Title, n=>n.Description,  n=>n.NoteDate, n=>n.NoteCategories))
@@ -192,7 +192,7 @@ namespace NTR2.Controllers
                     if (databaseEntry == null)
                     {
                         ModelState.AddModelError(string.Empty,
-                            "Unable to save changes. The department was deleted by another user.");
+                            "Unable to save changes. The note was deleted by another user.");
                     }
                     else
                     {
@@ -257,26 +257,6 @@ namespace NTR2.Controllers
             dict.Add("category", TempData.Peek("category"));
             dict.Add("dateFrom", Convert.ToDateTime(TempData.Peek("dateFrom")));
             dict.Add("dateTo", Convert.ToDateTime(TempData.Peek("dateTo")));
-            dict.Add("pageNumber",TempData.Peek("pageNumber"));
-
-            return RedirectToAction(nameof(Index), dict);
-        }
-        private RedirectToActionResult returnToAdd(NoteEditViewModel model)
-        {
-            RouteValueDictionary dict = new RouteValueDictionary();
-            dict.Add("chosenCategory", TempData.Peek("chosenCategory"));
-            dict.Add("start_date", Convert.ToDateTime(TempData.Peek("startDate")));
-            dict.Add("last_date", Convert.ToDateTime(TempData.Peek("lastDate")));
-            dict.Add("pageNumber",TempData.Peek("pageNumber"));
-
-            return RedirectToAction(nameof(Index), dict);
-        }
-        private RedirectToActionResult returnToEdit()
-        {
-            RouteValueDictionary dict = new RouteValueDictionary();
-            dict.Add("chosenCategory", TempData.Peek("chosenCategory"));
-            dict.Add("start_date", Convert.ToDateTime(TempData.Peek("startDate")));
-            dict.Add("last_date", Convert.ToDateTime(TempData.Peek("lastDate")));
             dict.Add("pageNumber",TempData.Peek("pageNumber"));
 
             return RedirectToAction(nameof(Index), dict);
