@@ -174,6 +174,7 @@ namespace NTR2.Controllers
             if (oldNote == null)
             {
                 Note deletedNote = new Note();
+                model.Note.NoteCategories = noteCategories;
                 await TryUpdateModelAsync(deletedNote);
                 ModelState.AddModelError(string.Empty,
                     "Unable to save changes. The note was deleted by another user.");
