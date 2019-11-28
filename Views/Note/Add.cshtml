@@ -9,12 +9,12 @@
                 <input asp-for="Note.Title" class="form-control" /> <br/>
                 @Html.ValidationMessage("Title error")
                 <br/>
-                <label asp-for="Note.Description" class="control-label"></label>
+                <label asp-for="Note.Description" class="control-label"></label><br/>
                 <textarea asp-for="Note.Description"
                     data-val-required="The Description field is required."
                     data-val-maxlength-max="5000"
                     data-val-maxlength="The field Description must be a string or array type with a maximum length of '5000'."
-                    data-val="true" rows="4" cols="20" style="overflow:auto;resize:none" asp-for="PromptDescription"></textarea> <br />
+                    data-val="true" rows="4" cols="20" style="overflow:auto;" asp-for="PromptDescription"></textarea> <br />
                 <br/><br/>
                 @Html.HiddenFor(m=>m.Note.NoteDate)
                 @for (int i = 0; i < Model.Note.NoteCategories.Count; ++i)

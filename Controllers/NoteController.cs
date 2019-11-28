@@ -76,7 +76,7 @@ namespace NTR2.Controllers
                 model.NewCategory="";
             }
             
-            if(Notes.Where(m=>m.Title==model.Note.Title).Any())
+            if(model.Note.Timestamp!=null)
                 return View("Edit",model);
             else return View("Add",model);
         }
@@ -109,11 +109,13 @@ namespace NTR2.Controllers
             {
                 if(model.Note.Title=="write some title"||model.Note.Title=="")
                 {
+                    model.Note.NoteCategories = noteCategories;
                     ModelState.AddModelError("Title error","Wrong title");
                     return View(model);
                 }
                 else if(Notes.Where(m=>m.Title==model.Note.Title).Any())
                 {
+                    model.Note.NoteCategories = noteCategories;
                     ModelState.AddModelError("Title error","Title already taken");
                     return View(model);
                 }
@@ -176,7 +178,7 @@ namespace NTR2.Controllers
                 Note deletedNote = new Note();
                 model.Note.NoteCategories = noteCategories;
                 await TryUpdateModelAsync(deletedNote);
-                ModelState.AddModelError(string.Empty,
+                ModelState.AddModelError("Deleted",
                     "Unable to save changes. The note was deleted by another user.");
                 return View(new NoteEditViewModel(deletedNote));
             }
